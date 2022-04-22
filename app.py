@@ -5,36 +5,55 @@ import pandas_datareader as data
 from keras.models import load_model
 import streamlit as st
 import plotly.graph_objs as go
+import yfinance as yf
+import datetime
 
-import plotly.figure_factory as ff
+start = '2010-01-01'
+end ='2021-12-31'
 
+st.title("Stock Forecast")
+st.markdown("The dashboard will help a researcher to get to know more about the stock graphs and prediction")
 
-
-#start = '2010-01-01'
-#end ='2021-12-31'
-
-st.title('Stock ForeCasting')
-
-user_input = st.text_input('Enter Stock Ticker', 'AAPL')
-start_input = st.text_input('Enter Start Date', '2010-01-01')
-end_input = st.text_input('Enter End Date', '2021-12-31')
+st.sidebar.title("Ticker Details")
+st.sidebar.markdown("Enter Stock Ticker and Time Period you want to see data:")
+user_input = st.sidebar.text_input('Enter Stock Ticker','AAPL')
+start_input = st.sidebar.date_input('Enter Start Date',datetime.date(2010, 1, 1))
+end_input = st.sidebar.date_input('Enter End Date', datetime.date(2022, 4, 22))
 df = data.DataReader(user_input,'yahoo',start_input,end_input)
-option = st.selectbox('Select Graph you want to see',('Data','Closing Vs Opening', '100MA', '200MA', 'Predicted'))
+
+
+
+tickerData = yf.Ticker(user_input)
+tickerDf = tickerData.history(period='1d',start=start_input, end = end_input)
+
+string_logo='<img src=%s>' % tickerData.info['logo_url']
+st.markdown(string_logo, unsafe_allow_html=True)
+
+string_name=tickerData.info['longName']
+st.header('**%s**' % string_name)
+
+string_summary=tickerData.info['longBusinessSummary']
+st.info(string_summary)
+
+st.header('**Ticker data**')
+st.write(tickerDf)
+
+option = st.sidebar.selectbox('Select Graph you want to see',('Data','Closing Vs Opening', '100MA', '200MA', 'Predicted'))
 
 
 #Data Representation
-if option=='Data':
-    st.subheader('Data from 2010-2021')
-    st.write(df.describe())
+#if option=='Data':
+#    st.subheader('Data for given interval')
+#    st.write(df.describe())
 
 #Graphs 
-elif option=='Closing Vs Opening':
+if option=='Closing Vs Opening':
     st.subheader('Closing Price Vs Time chart')
-    fig = plt.figure(figsize = (12,6))
+    fig = plt.figure()
     plt.plot(df.Open,'r',label='Opening Price')
     plt.plot(df.Close,'g',label='Closing Price')
     plt.legend()
-    st.pyplot(fig)
+    st.plotly_chart(fig,use_container_width=True)
 
 elif option=='100MA':
     st.subheader('Closing Price Vs Time chart with 100MA')
@@ -94,10 +113,10 @@ y_test = y_test*scale_factor
 if option=='Predicted':
     #forecasting Graph
     st.subheader('Actual VS Predicted Graph')
-    fig2= plt.figure(figsize=(12,6))
+    fig2= plt.figure()
     plt.plot(y_test,'b',label='Original Price')
     plt.plot(y_predicted,'r',label='Predicted')
-    plt.xlabel('Time')
+    plt.xlabel('no of days from start date')
     plt.ylabel('Price')
     plt.legend()
     st.plotly_chart(fig2,use_container_width=True)
